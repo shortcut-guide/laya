@@ -348,3 +348,6 @@ scripts/build.sh --skip-engine                     # エンジンバンドルを
 - [**Decision Log**](./docs/decision-log.md) -- 根拠を含むアーキテクチャ上の決定
 
 より深い設計ドキュメント（egress、AI 処理ルール、OAuth アプリ配布、パイプライフライフサイクル）は [`engine/docs/`](./engine/docs/) にあります。
+
+# 似ているアーキテクチャ
+https://github.com/hiroki-abe-58/sokudan
