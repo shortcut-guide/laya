@@ -349,5 +349,61 @@ scripts/build.sh --skip-engine                     # エンジンバンドルを
 
 より深い設計ドキュメント（egress、AI 処理ルール、OAuth アプリ配布、パイプライフライフサイクル）は [`engine/docs/`](./engine/docs/) にあります。
 
+# ローカルの実装に関して。低スペ
+**結論から言うと、Radeon 6800 XT で Laya は動作する可能性が高いです。** ただし、いくつか注意点があります。
+
+---
+
+### Laya のモデルサイズ
+
+Laya は約 **4.2億パラメータ**（ModernBERT-large backbone + decision head）のモデルです。<source-chip title="Hugging Face - Laya" url="https://huggingface.co/convaiinnovations/laya" />
+
+入力は1問あたり **512トークン** で、GPU上での1問の推論時間は約 **38ms**、10問のバッチ処理でも **156ms** 程度です。非常に軽量なモデルです。
+
+---
+
+### Radeon 6800 XT の状況
+
+**VRAM（16GB）に関しては全く問題ありません。** 4.2億パラメータのモデルなら、FP16でも数百MB〜1GB程度のVRAMしか使いません。
+
+問題になるのは **ROCm（AMDのGPUコンピューティングプラットフォーム）の互換性** です。
+
+| 項目 | 状況 |
+|------|------|
+| 公式ROCmサポート | 6800 XT（gfx1030）は**公式サポート対象外** |
+| 実際の動作 | コミュニティでは**動作報告が多数あり** |
+| 必要な対応 | `HSA_OVERRIDE_GFX_VERSION=10.3.0` などの環境変数設定が必要な場合あり |
+
+<source-chip title="ROCm GitHub Issue" url="https://github.com/RadeonOpenCompute/ROCm/issues/1786" /><source-chip title="CodeGenes - 6800XT PyTorch" url="https://www.codegenes.net/blog/6800xt-pytorch/" />
+
+---
+
+### セットアップの流れ（Linux推奨）
+
+1. **ROCm をインストール**（Linux上）
+2. **PyTorch（ROCm版）をインストール**
+3. **`pip install laya`**
+4. 必要に応じて環境変数を設定して実行
+
+```bash
+# 環境変数の例（必要な場合）
+export HSA_OVERRIDE_GFX_VERSION=10.3.0
+
+python -c "
+import laya
+agent = laya.load('convaiinnovations/laya')
+# ... 推論処理
+"
+```
+
+---
+
+### まとめ
+
+- **VRAM的には余裕**: 16GBで4.2億パラメータは全く問題なし
+- **推論速度も速い**: 38ms/問程度で動く見込み
+- **注意点**: 6800 XTはROCm公式サポート外なので、環境変数の設定やLinux環境が必要になる場合があります
+- **WindowsよりLinux推奨**: ROCmの consumer GPU サポートは Linux が基本です
+
 # 似ているアーキテクチャ
 https://github.com/hiroki-abe-58/sokudan
